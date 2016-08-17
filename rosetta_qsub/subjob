@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# This script wraps the creation of folders and submission of a job to the queue.
+
+# Make folders:
+./makedirs
+
+# Now run the job:
+qsub ./add2queue
+### Remove qsub to test the this script
+#./add2queue

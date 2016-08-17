@@ -1,0 +1,63 @@
+#!/bin/sh
+### Note: No commands may be executed until after the #PBS lines
+### Account information
+#PBS -W group_list=cu_10020 -A cu_10020
+### Job name (comment out the next line to get the name of the script used as the job name)
+#PBS -N krdav_job
+### Output files (comment out the next 2 lines to get the job name used instead)
+#PBS -e qsub_run_loop_pep.err
+#PBS -o qsub_run_loop_pep.out
+### Email: no (n)
+#PBS -M n
+### Make the job rerunable (y)
+#PBS -r y
+### Number of nodes
+#PBS -l nodes=1:ppn=10:thinnode
+### Requesting time - 12 hours - overwrites **long** queue setting
+#PBS -l walltime=12:00:00
+
+echo This is the STDOUT stream from a PBS Torque submission script.
+# Go to the directory from where the job was submitted (initial directory is $HOME)
+echo Working directory is $PBS_O_WORKDIR
+cd $PBS_O_WORKDIR
+
+### Here follows the user commands:
+# Define number of processors
+NPROCS=`wc -l < $PBS_NODEFILE`
+NPMAX=28
+ext='loop_pep'
+echo "This job has allocated $NPROCS nodes out of $NPMAX"
+
+# Modules to load:
+module load moab torque
+module load tools
+module load ngs
+module load anaconda
+module load openmpi/gcc/64/1.8.5
+module load rosetta/2015.39
+#module load rosetta/2015.22
+module load perl/5.20.2
+
+# Load user Bash settings:
+source /home/people/krdav/.bash_profile 
+
+echo Modules and users Bash settings was loaded.
+
+echo CPU utilization is measured each 10 sec. by the sar command and redirected to GGG.cpu.
+echo "This job is using $NPROCS cores." > qsub_run_${ext}.cpu
+sar -u 10 99999 >> qsub_run_${ext}.cpu &
+# Get sar pid:
+sar_pid=$!;
+
+echo  Now the user defined script is run. After the ---- line, the STDOUT stream from the script is pasted.
+echo -----------------------------------------------------------------------------------------------------
+# Run the desired script:
+#score_jd2.linuxgccrelease -database $ROSETTA_DB -s 2k39.*.pdb -scorefile score.sc -native 1ubiA.pdb > score.log
+mpirun -np 10 -mca btl ^openib loopmodel.mpi.linuxgccrelease -database $ROSETTA_DB -nstruct 15 -s 1mfg.pdb -native 1mfgA.pdb -out:prefix myloop -loops:loop_file loopfile -loops:extended false -loops:remodel perturb_kic -out:file:fullatom -overwrite -out:mpi_tracer_to_file > loop.log
+
+echo -----------------------------------------------------------------------------------------------------
+echo 'killing sar process id' $sar_pid
+kill -9 $sar_pid;
+echo Script finished running.
+
+

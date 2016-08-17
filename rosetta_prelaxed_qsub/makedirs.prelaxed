@@ -1,0 +1,20 @@
+#!/bin/sh
+
+### This script makes all the directories before starting the actual run. In that way the qsub logs can be written to the right folders.
+
+
+#echo "Making ./pairs.prelaxed/ and then going into it."
+mkdir ./pairs.prelaxed/
+cd ./pairs.prelaxed/
+
+#echo "Now moving the prelaxed pdb files to the new folder."
+#mv ../pairs/*.prelax.pdb .
+
+#echo "Make a subfolder for the Rosetta logs and move them there."
+mkdir rosetta_logs
+#mv ../pairs/*.log ./rosetta_logs
+
+
+mkdir qsub_logs
+#mv ../qsub_run.* ./qsub_logs
+

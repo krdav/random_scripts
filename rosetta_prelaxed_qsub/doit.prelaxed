@@ -1,0 +1,51 @@
+#!/bin/sh
+
+# Print the purpose the STDOUT:
+echo "This is a run script for protein structure relaxation with Rosetta."
+
+# Use the amount of cores availible:
+NPROCS=`wc -l < $PBS_NODEFILE`
+echo "This is the number of cores given to the run: $NPROCS"
+
+echo "Going to ./pairs/"
+cd ./pairs/
+
+
+# Catch the time before the intensive calculations:
+res1=$(date +%s.%N)
+
+# Do the computer intensive stuff:
+echo "Finding all *.pdb files and using xargs to process them in parallel with the maximum specified cores. Output log from the Rosetta script is redirected to same filename as the pdb file but with the extension prelax.log on."
+#find . -name '*.pdb' | xargs --max-args=1 --max-procs=$NPROCS -l bash -c 'echo This is the file to run: $0 > $0.prelax.log'
+find . -name '*.pdb' | xargs --max-args=1 --max-procs=$NPROCS -l bash -c 'relax.static.linuxgccrelease @../prelax.args -s $0 >& $0.prelax.log'
+
+# Calculate the cpu time:
+res2=$(date +%s.%N)
+dt=$(echo "$res2 - $res1" | bc)
+dd=$(echo "$dt/86400" | bc)
+dt2=$(echo "$dt-86400*$dd" | bc)
+dh=$(echo "$dt2/3600" | bc)
+dt3=$(echo "$dt2-3600*$dh" | bc)
+dm=$(echo "$dt3/60" | bc)
+ds=$(echo "$dt3-60*$dm" | bc)
+
+# Print the cpu time:
+echo "********************"
+printf "Total runtime: %d:%02d:%02d:%02.4f (days:hours:minutes:seconds)\n" $dd $dh $dm $ds
+echo "********************"
+
+
+echo "Going back to the run folder (cd ..)"
+cd ..
+echo "Going to ./pairs.prelaxed/ and moving the prelaxed pdb files to this folder."
+#mkdir ./pairs.prelaxed/
+cd ./pairs.prelaxed/
+mv ../pairs/*.prelax.pdb .
+
+echo "Also move a copy the Rosetta options to the ./pairs.prelaxed/ folder, calling it used_prelax.args."
+cp ../prelax.args ./used_prelax.args
+
+echo "Move the Rosetta logs to the rosetta_logs folder."
+#mkdir rosetta_logs
+mv ../pairs/*.log ./rosetta_logs
+
